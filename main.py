@@ -2,33 +2,33 @@ import time
 import re
 import requests
 from telegram import Bot
+from threading import Thread
+from flask import Flask
 
 # ==== CẤU HÌNH ====
 TELEGRAM_TOKEN = "7673301496:AAF-TV9j4xLhZbnbseKiJkepuwmVHL__a9A"
 CHAT_ID = "5922342911"
-TIKTOK_USERNAME = '0211quoccuong'  # Thay bằng username idol TikTok thật của con, không có dấu @
+TIKTOK_USERNAME = "0211quoccuong"
 
 bot = Bot(token=TELEGRAM_TOKEN)
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot đang chạy ngon lành!"
 
 def is_live(username):
-    """
-    Kiểm tra idol có đang live TikTok không bằng cách:
-    - Tìm chuỗi "isLive":true trong HTML
-    - Hoặc tìm thẻ HTML có class chứa 'live' hoặc 'badge' và có chữ 'live' bên trong (khung đỏ live)
-    """
     try:
         url = f'https://www.tiktok.com/@{username}/live'
         headers = {'User-Agent': 'Mozilla/5.0'}
         response = requests.get(url, headers=headers)
         html = response.text
 
-        # Kiểm tra chuỗi "isLive":true
         if '"isLive":true' in html:
             return True
 
-        # Kiểm tra thẻ có chữ LIVE trong khung đỏ
         pattern = re.compile(
-            r'<[^>]+class=["\'][^"\']*(live|badge)[^"\']*["\'][^>]*>\s*live\s*</[^>]+>', 
+            r'<[^>]+class=["\'][^"\']*(live|badge)[^"\']*["\'][^>]*>\s*live\s*</[^>]+>',
             re.IGNORECASE
         )
         if pattern.search(html):
@@ -38,7 +38,7 @@ def is_live(username):
         print(f"Lỗi khi kiểm tra live: {e}")
     return False
 
-def main():
+def run_bot():
     print("Bot bắt đầu theo dõi idol live TikTok...")
     was_live = False
     while True:
@@ -54,7 +54,10 @@ def main():
                 was_live = False
         except Exception as e:
             print(f"Lỗi vòng lặp: {e}")
-        time.sleep(10)  # Kiểm tra mỗi 10 giây
+        time.sleep(15)  # Kiểm tra mỗi 15 giây
 
 if __name__ == "__main__":
-    main()
+    # Chạy bot trong luồng riêng
+    Thread(target=run_bot).start()
+    # Mở web server
+    app.run(host="0.0.0.0", port=10000)
